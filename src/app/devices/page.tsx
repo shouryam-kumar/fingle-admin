@@ -2,7 +2,7 @@ import { getDeviceBreakdown, getVersionAdoption } from "@/lib/queries";
 import { ContentPieChart } from "@/components/charts";
 import { MetricCard, GlowCard } from "@/components/metric-card";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function DevicesPage() {
   const [devices, versions] = await Promise.all([

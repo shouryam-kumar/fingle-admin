@@ -2,7 +2,7 @@ import { getTopFollowed, getTopCreators, getSignupSources } from "@/lib/queries"
 import { ContentPieChart } from "@/components/charts";
 import { GlowCard } from "@/components/metric-card";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function UsersPage() {
   const [topFollowed, topCreators, signupSources] = await Promise.all([

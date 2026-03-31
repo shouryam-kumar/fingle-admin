@@ -3,7 +3,7 @@ import { getContentStats, getCreatorRatio, getPostingHeatmap, getDeadContent } f
 import { ContentPieChart } from "@/components/charts";
 import { MetricCard, GlowCard } from "@/components/metric-card";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function ContentPage() {
   const [contentStats, creatorRatio, heatmap, deadContent] = await Promise.all([

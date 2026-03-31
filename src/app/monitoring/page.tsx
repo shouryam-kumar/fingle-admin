@@ -1,7 +1,7 @@
 import { getDatabaseStats, getSupabaseHealth, getStorageBuckets } from "@/lib/queries";
 import { MetricCard, GlowCard } from "@/components/metric-card";
 
-export const revalidate = 60; // Refresh every minute
+export const dynamic = "force-dynamic"; // Always fresh data; // Refresh every minute
 
 export default async function MonitoringPage() {
   const [dbStats, health, buckets] = await Promise.all([

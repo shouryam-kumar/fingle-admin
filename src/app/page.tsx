@@ -2,7 +2,7 @@ import { getTotalUsers, getDAU, getMAU, getSignupTrend, getDAUTrend, getAvgSessi
 import { SignupChart, DAUChart, ContentPieChart } from "@/components/charts";
 import { MetricCard, GlowCard } from "@/components/metric-card";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function OverviewPage() {
   const [totalUsers, dau, mau, signupTrend, dauTrend, avgSession, contentStats, creatorRatio, wowGrowth, signupSources] = await Promise.all([

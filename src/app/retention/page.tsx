@@ -1,7 +1,7 @@
 import { getRetentionCohorts } from "@/lib/queries";
 import { GlowCard } from "@/components/metric-card";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function RetentionPage() {
   const cohorts = await getRetentionCohorts(6);

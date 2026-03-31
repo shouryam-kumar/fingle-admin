@@ -2,7 +2,7 @@ import { getEngagementTrend } from "@/lib/queries";
 import { EngagementChart } from "@/components/charts";
 import { MetricCard, GlowCard } from "@/components/metric-card";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function EngagementPage() {
   const engagementTrend = await getEngagementTrend(14);
