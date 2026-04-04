@@ -1,4 +1,4 @@
-import { getReports, getAllUsers } from "@/lib/queries";
+import { getReports } from "@/lib/queries";
 import { GlowCard } from "@/components/metric-card";
 import { ModerationActions } from "@/components/moderation-actions";
 import { UserSearch } from "@/components/user-search";
@@ -6,14 +6,10 @@ import { UserSearch } from "@/components/user-search";
 export const dynamic = "force-dynamic";
 
 export default async function ModerationPage() {
-  const [reports, users] = await Promise.all([
-    getReports(undefined, 50, 0),
-    getAllUsers(50, 0),
-  ]);
+  const reports = await getReports(undefined, 50, 0);
 
   const pendingReports = (reports as any[]).filter((r: any) => r.status === 'pending');
   const resolvedReports = (reports as any[]).filter((r: any) => r.status !== 'pending');
-  const suspendedUsers = (users as any[]).filter((u: any) => u.is_suspended);
 
   return (
     <div className="space-y-8">
@@ -23,7 +19,7 @@ export default async function ModerationPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <GlowCard>
           <p className="text-xs text-gray-400 uppercase tracking-wider">Pending Reports</p>
           <p className="text-3xl font-bold text-white mt-1">{pendingReports.length}</p>
@@ -31,14 +27,6 @@ export default async function ModerationPage() {
         <GlowCard>
           <p className="text-xs text-gray-400 uppercase tracking-wider">Total Reports</p>
           <p className="text-3xl font-bold text-white mt-1">{(reports as any[]).length}</p>
-        </GlowCard>
-        <GlowCard>
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Suspended Users</p>
-          <p className="text-3xl font-bold text-white mt-1">{suspendedUsers.length}</p>
-        </GlowCard>
-        <GlowCard>
-          <p className="text-xs text-gray-400 uppercase tracking-wider">Total Users</p>
-          <p className="text-3xl font-bold text-white mt-1">{(users as any[]).length}</p>
         </GlowCard>
       </div>
 
@@ -78,7 +66,7 @@ export default async function ModerationPage() {
       {/* User Management */}
       <GlowCard>
         <h3 className="text-lg font-semibold text-white mb-4">User Management</h3>
-        <UserSearch allUsers={users as any[]} />
+        <UserSearch />
       </GlowCard>
 
       {/* Resolved Reports */}
