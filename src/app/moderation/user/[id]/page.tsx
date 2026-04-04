@@ -4,10 +4,11 @@ import { UserActions } from "@/components/user-actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function UserDetailPage({ params }: { params: { id: string } }) {
+export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const [userDetails, userContent] = await Promise.all([
-    getUserDetails(params.id),
-    getUserContent(params.id),
+    getUserDetails(id),
+    getUserContent(id),
   ]);
 
   if (!userDetails) {
@@ -85,7 +86,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
         </div>
 
         {/* Admin Actions */}
-        <UserActions userId={params.id} isSuspended={user.is_suspended} />
+        <UserActions userId={id} isSuspended={user.is_suspended} />
       </GlowCard>
 
       {/* User Content */}
@@ -114,7 +115,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
                   <span className="text-xs text-gray-500">
                     {new Date(post.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <UserActions userId={params.id} postId={post.id} postType={post.type} isDeleteAction />
+                  <UserActions userId={id} postId={post.id} postType={post.type} isDeleteAction />
                 </div>
               </div>
             ))}
