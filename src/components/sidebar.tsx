@@ -31,6 +31,12 @@ const sections = [
     ],
   },
   {
+    title: "Moderation",
+    items: [
+      { href: "/moderation", label: "Reports & Users", icon: "🛡️" },
+    ],
+  },
+  {
     title: "Admin",
     items: [
       { href: "/settings", label: "Settings", icon: "⚙️" },
