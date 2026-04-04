@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { searchContentAction, getRecentContentAction } from "@/lib/actions";
+import { searchContentAction, getRecentContentAction, getPostByIdAction } from "@/lib/actions";
 import { ContentDeleteButton } from "./content-delete-button";
 
 export function ContentBrowser() {
@@ -9,6 +9,15 @@ export function ContentBrowser() {
   const [content, setContent] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+
+  const extractPostId = (input: string): string | null => {
+    // Match fingle.app/p/{uuid} or just a raw UUID
+    const urlMatch = input.match(/\/p\/([a-f0-9-]{36})/i);
+    if (urlMatch) return urlMatch[1];
+    const uuidMatch = input.match(/^[a-f0-9-]{36}$/i);
+    if (uuidMatch) return uuidMatch[0];
+    return null;
+  };
 
   const handleSearch = async (q: string) => {
     setQuery(q);
@@ -20,8 +29,15 @@ export function ContentBrowser() {
 
     setLoading(true);
     try {
-      const results = await searchContentAction(q);
-      setContent(results as any[]);
+      // Check if input is a post link or UUID
+      const postId = extractPostId(q.trim());
+      if (postId) {
+        const results = await getPostByIdAction(postId);
+        setContent(results as any[]);
+      } else {
+        const results = await searchContentAction(q);
+        setContent(results as any[]);
+      }
       setSearched(true);
     } catch (e) {
       console.error("Search failed:", e);
@@ -47,7 +63,7 @@ export function ContentBrowser() {
       <div className="flex gap-3 mb-4">
         <input
           type="text"
-          placeholder="Search by username or name (min 3 chars)..."
+          placeholder="Search by username, name, or paste a post link..."
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           className="flex-1 px-4 py-2.5 bg-gray-800/50 border border-gray-700/50 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500/50"
