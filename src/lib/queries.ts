@@ -577,6 +577,11 @@ export async function deletePost(postId: string, postType: string, reason: strin
   return data;
 }
 
+export async function getAllContent(limit = 50, offset = 0) {
+  const { data } = await supabase.rpc('admin_get_all_content', { p_limit: limit, p_offset: offset });
+  return data ?? [];
+}
+
 export async function resolveReport(reportId: string, reportType: string, resolution: string, notes: string, adminId: string) {
   const { data } = await supabase.rpc('admin_resolve_report', {
     p_report_id: reportId,
