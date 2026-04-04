@@ -1,14 +1,15 @@
-import { getTotalUsers, getDAU, getMAU, getSignupTrend, getDAUTrend, getAvgSessionDuration, getContentStats, getCreatorRatio, getWoWGrowth, getSignupSources } from "@/lib/queries";
+import { getTotalUsers, getDAU, getMAU, getWAU, getSignupTrend, getDAUTrend, getAvgSessionDuration, getContentStats, getCreatorRatio, getWoWGrowth, getSignupSources } from "@/lib/queries";
 import { SignupChart, DAUChart, ContentPieChart } from "@/components/charts";
 import { MetricCard, GlowCard } from "@/components/metric-card";
 
 export const dynamic = "force-dynamic"; // Always fresh data;
 
 export default async function OverviewPage() {
-  const [totalUsers, dau, mau, signupTrend, dauTrend, avgSession, contentStats, creatorRatio, wowGrowth, signupSources] = await Promise.all([
+  const [totalUsers, dau, mau, wau, signupTrend, dauTrend, avgSession, contentStats, creatorRatio, wowGrowth, signupSources] = await Promise.all([
     getTotalUsers(),
     getDAU(),
     getMAU(),
+    getWAU(),
     getSignupTrend(30),
     getDAUTrend(30),
     getAvgSessionDuration(),
@@ -18,10 +19,8 @@ export default async function OverviewPage() {
     getSignupSources(),
   ]);
 
-  const dauMauRatio = mau > 0 ? Math.round((dau / mau) * 100) : 0;
+  const dauMauRatio = mau > 0 ? Math.min(Math.round((dau / mau) * 100), 100) : 0;
   const todaySignups = signupTrend[signupTrend.length - 1]?.count ?? 0;
-  const yesterdaySignups = signupTrend[signupTrend.length - 2]?.count ?? 0;
-  const signupTrend7d = yesterdaySignups > 0 ? Math.round(((todaySignups - yesterdaySignups) / yesterdaySignups) * 100) : 0;
 
   return (
     <div className="space-y-8">
@@ -52,6 +51,13 @@ export default async function OverviewPage() {
           subtitle="Active today"
           icon="📱"
           gradient="bg-blue-600"
+        />
+        <MetricCard
+          title="WAU"
+          value={wau}
+          subtitle="Active this week"
+          icon="📊"
+          gradient="bg-indigo-600"
         />
         <MetricCard
           title="Stickiness"

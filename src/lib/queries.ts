@@ -14,25 +14,19 @@ export async function getTotalUsers() {
 export async function getDAU() {
   const today = new Date().toISOString().split('T')[0];
   const { data } = await supabase.rpc('get_dau', { p_date: today });
-  if (data !== null && data !== undefined) return data as number;
-
-  // Fallback: count distinct users from session tracking
-  const { count } = await supabase
-    .from('user_sessions')
-    .select('user_id', { count: 'exact', head: true })
-    .gte('started_at', `${today}T00:00:00`);
-  return count ?? 0;
+  return (data as number) ?? 0;
 }
 
 export async function getMAU() {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const { data } = await supabase
-    .from('user_sessions')
-    .select('user_id')
-    .gte('started_at', thirtyDaysAgo);
+  const today = new Date().toISOString().split('T')[0];
+  const { data } = await supabase.rpc('get_mau', { p_date: today });
+  return (data as number) ?? 0;
+}
 
-  const uniqueUsers = new Set((data ?? []).map(d => d.user_id));
-  return uniqueUsers.size;
+export async function getWAU() {
+  const today = new Date().toISOString().split('T')[0];
+  const { data } = await supabase.rpc('get_wau', { p_date: today });
+  return (data as number) ?? 0;
 }
 
 export async function getSignupTrend(days: number = 30) {
