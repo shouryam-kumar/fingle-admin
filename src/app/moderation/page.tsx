@@ -1,6 +1,6 @@
 import { getReports, getAllUsers } from "@/lib/queries";
 import { GlowCard } from "@/components/metric-card";
-import { ModerationActions } from "@/components/moderation-actions";
+import { ModerationActions, InlineSuspendButton } from "@/components/moderation-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -120,9 +120,12 @@ export default async function ModerationPage() {
                     {new Date(user.created_at).toLocaleDateString()}
                   </td>
                   <td className="py-3 px-2 text-center">
-                    <a href={`/moderation/user/${user.auth_id ?? user.id}`} className="text-purple-400 hover:text-purple-300 text-xs">
-                      View Details
-                    </a>
+                    <div className="flex items-center justify-center gap-2">
+                      <a href={`/moderation/user/${user.auth_id ?? user.id}`} className="text-purple-400 hover:text-purple-300 text-xs">
+                        Details
+                      </a>
+                      <InlineSuspendButton userId={user.auth_id ?? user.id} isSuspended={user.is_suspended} />
+                    </div>
                   </td>
                 </tr>
               ))}
