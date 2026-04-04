@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { suspendUser, unsuspendUser, resolveReport, deletePost } from "@/lib/queries";
+import { suspendUserAction, unsuspendUserAction, resolveReportAction } from "@/lib/actions";
 
 export function ModerationActions({ reportId, reportType, reportedUserId }: { reportId: string; reportType: string; reportedUserId: string }) {
   const [loading, setLoading] = useState(false);
@@ -11,7 +11,7 @@ export function ModerationActions({ reportId, reportType, reportedUserId }: { re
   const handleResolve = async (resolution: string) => {
     setLoading(true);
     try {
-      await resolveReport(reportId, reportType, resolution, '', '');
+      await resolveReportAction(reportId, reportType, resolution, '');
       setDone(true);
     } catch (e) {
       alert('Failed to resolve report');
@@ -26,8 +26,8 @@ export function ModerationActions({ reportId, reportType, reportedUserId }: { re
 
     setLoading(true);
     try {
-      await suspendUser(reportedUserId, type, reason, '');
-      await resolveReport(reportId, reportType, 'resolved', `User suspended: ${type}`, '');
+      await suspendUserAction(reportedUserId, type, reason);
+      await resolveReportAction(reportId, reportType, 'resolved', `User suspended: ${type}`);
       setDone(true);
     } catch (e) {
       alert('Failed to suspend user');
@@ -88,7 +88,7 @@ export function InlineSuspendButton({ userId, isSuspended }: { userId: string; i
 
     setLoading(true);
     try {
-      await suspendUser(userId, type, reason, '', expiresAt);
+      await suspendUserAction(userId, type, reason, expiresAt);
       router.refresh();
     } catch (e) {
       alert('Failed to suspend');
@@ -100,7 +100,7 @@ export function InlineSuspendButton({ userId, isSuspended }: { userId: string; i
     if (!confirm('Unsuspend this user?')) return;
     setLoading(true);
     try {
-      await unsuspendUser(userId, '');
+      await unsuspendUserAction(userId);
       router.refresh();
     } catch (e) {
       alert('Failed to unsuspend');

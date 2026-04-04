@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { suspendUser, unsuspendUser, deletePost } from "@/lib/queries";
+import { suspendUserAction, unsuspendUserAction, deletePostAction } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 interface UserActionsProps {
@@ -25,7 +25,7 @@ export function UserActions({ userId, isSuspended, postId, postType, isDeleteAct
 
       setLoading(true);
       try {
-        await deletePost(postId, postType, reason, '');
+        await deletePostAction(postId, postType, reason);
         router.refresh();
       } catch (e) {
         alert('Failed to delete post');
@@ -62,7 +62,7 @@ export function UserActions({ userId, isSuspended, postId, postType, isDeleteAct
 
     setLoading(true);
     try {
-      await suspendUser(userId, type, reason, '', expiresAt);
+      await suspendUserAction(userId, type, reason, expiresAt);
       router.refresh();
     } catch (e) {
       alert('Failed to suspend user');
@@ -74,7 +74,7 @@ export function UserActions({ userId, isSuspended, postId, postType, isDeleteAct
     if (!confirm('Unsuspend this user?')) return;
     setLoading(true);
     try {
-      await unsuspendUser(userId, '');
+      await unsuspendUserAction(userId);
       router.refresh();
     } catch (e) {
       alert('Failed to unsuspend user');
