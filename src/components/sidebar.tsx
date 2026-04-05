@@ -40,6 +40,7 @@ const sections = [
   {
     title: "Admin",
     items: [
+      { href: "/kyc", label: "KYC Queue", icon: "🛡️" },
       { href: "/settings", label: "Settings", icon: "⚙️" },
     ],
   },

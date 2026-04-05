@@ -506,6 +506,84 @@ export async function getUserActivity(userId: string) {
   };
 }
 
+// ============================================
+// KYC Verification
+// ============================================
+
+export async function getKYCQueue() {
+  const { data } = await supabase
+    .from('kyc_verifications')
+    .select('*, users!kyc_verifications_user_id_fkey(name, username, email, age, profile_pic)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  return data ?? [];
+}
+
+export async function getKYCStats() {
+  const [pending, approved, rejected] = await Promise.all([
+    supabase.from('kyc_verifications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('kyc_verifications').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
+    supabase.from('kyc_verifications').select('id', { count: 'exact', head: true }).eq('status', 'rejected'),
+  ]);
+  return {
+    pending: pending.count ?? 0,
+    approved: approved.count ?? 0,
+    rejected: rejected.count ?? 0,
+  };
+}
+
+export async function getKYCHistory(limit = 20) {
+  const { data } = await supabase
+    .from('kyc_verifications')
+    .select('*, users!kyc_verifications_user_id_fkey(name, username)')
+    .neq('status', 'pending')
+    .order('reviewed_at', { ascending: false })
+    .limit(limit);
+  return data ?? [];
+}
+
+export async function approveKYC(verificationId: string, adminEmail: string) {
+  const { data } = await supabase
+    .from('kyc_verifications')
+    .update({
+      status: 'approved',
+      reviewed_by: adminEmail,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', verificationId)
+    .select('user_id')
+    .single();
+
+  if (data) {
+    await supabase.from('users').update({
+      kyc_verified: true,
+      kyc_verified_at: new Date().toISOString(),
+      kyc_method: 'manual',
+    }).eq('id', data.user_id);
+  }
+  return !!data;
+}
+
+export async function rejectKYC(verificationId: string, adminEmail: string, reason: string) {
+  const { data } = await supabase
+    .from('kyc_verifications')
+    .update({
+      status: 'rejected',
+      reviewed_by: adminEmail,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: reason,
+    })
+    .eq('id', verificationId)
+    .select()
+    .single();
+  return !!data;
+}
+
+export async function getSignedKYCUrl(path: string) {
+  const { data } = await supabase.storage.from('kyc-documents').createSignedUrl(path, 3600);
+  return data?.signedUrl ?? '';
+}
+
 export async function getWoWGrowth() {
   const now = new Date();
   const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
