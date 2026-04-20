@@ -8,6 +8,7 @@ interface KYCRequest {
   id: string;
   user_id: string;
   aadhaar_front_url: string;
+  aadhaar_back_url: string;
   selfie_url: string;
   status: string;
   created_at: string;
@@ -23,6 +24,7 @@ export default function KYCPage() {
   const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
   const [selected, setSelected] = useState<KYCRequest | null>(null);
   const [aadhaarUrl, setAadhaarUrl] = useState("");
+  const [aadhaarBackUrl, setAadhaarBackUrl] = useState("");
   const [selfieUrl, setSelfieUrl] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,11 +53,18 @@ export default function KYCPage() {
 
   const selectRequest = async (req: KYCRequest) => {
     setSelected(req);
-    const [aadhaar, selfie] = await Promise.all([
+    setAadhaarUrl("");
+    setAadhaarBackUrl("");
+    setSelfieUrl("");
+    const [aadhaarFront, aadhaarBack, selfie] = await Promise.all([
       supabase.storage.from("kyc-documents").createSignedUrl(req.aadhaar_front_url, 3600),
+      req.aadhaar_back_url
+        ? supabase.storage.from("kyc-documents").createSignedUrl(req.aadhaar_back_url, 3600)
+        : Promise.resolve({ data: null }),
       supabase.storage.from("kyc-documents").createSignedUrl(req.selfie_url, 3600),
     ]);
-    setAadhaarUrl(aadhaar.data?.signedUrl ?? "");
+    setAadhaarUrl(aadhaarFront.data?.signedUrl ?? "");
+    setAadhaarBackUrl(aadhaarBack.data?.signedUrl ?? "");
     setSelfieUrl(selfie.data?.signedUrl ?? "");
   };
 
@@ -162,14 +171,26 @@ export default function KYCPage() {
               </div>
 
               {/* Document comparison */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Aadhaar Front</p>
                   <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
                     {aadhaarUrl ? (
-                      <img src={aadhaarUrl} alt="Aadhaar" className="w-full h-full object-contain" />
+                      <img src={aadhaarUrl} alt="Aadhaar front" className="w-full h-full object-contain" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Loading...</div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Aadhaar Back</p>
+                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
+                    {aadhaarBackUrl ? (
+                      <img src={aadhaarBackUrl} alt="Aadhaar back" className="w-full h-full object-contain" />
+                    ) : selected.aadhaar_back_url ? (
+                      <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Loading...</div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Not provided</div>
                     )}
                   </div>
                 </div>
