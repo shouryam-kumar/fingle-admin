@@ -80,10 +80,13 @@ export default function KYCPage() {
       reviewed_at: new Date().toISOString(),
     }).eq("id", selected.id);
 
+    // `is_verified` drives the verified badge in the mobile app; `kyc_verified`
+    // is the KYC-specific flag. Keep both in sync on approve so the tick shows up.
     await supabase.from("users").update({
       kyc_verified: true,
       kyc_verified_at: new Date().toISOString(),
       kyc_method: "manual",
+      is_verified: true,
     }).eq("id", selected.user_id);
 
     setSelected(null);
@@ -103,6 +106,13 @@ export default function KYCPage() {
       reviewed_at: new Date().toISOString(),
       rejection_reason: rejectReason.trim(),
     }).eq("id", selected.id);
+
+    // Defensive: if a previous approval set kyc_verified / is_verified on this
+    // user, drop them now that we're rejecting.
+    await supabase.from("users").update({
+      kyc_verified: false,
+      is_verified: false,
+    }).eq("id", selected.user_id);
 
     setSelected(null);
     setRejectReason("");
@@ -170,40 +180,42 @@ export default function KYCPage() {
                 <p>Age: {selected.users?.age}</p>
               </div>
 
-              {/* Document comparison */}
+              {/* Document comparison — click a thumbnail to open full-size in a new tab */}
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Aadhaar Front</p>
-                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
-                    {aadhaarUrl ? (
-                      <img src={aadhaarUrl} alt="Aadhaar front" className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Loading...</div>
-                    )}
+                {[
+                  { label: "Aadhaar Front", url: aadhaarUrl, hasSrc: true, alt: "Aadhaar front" },
+                  {
+                    label: "Aadhaar Back",
+                    url: aadhaarBackUrl,
+                    hasSrc: Boolean(selected.aadhaar_back_url),
+                    alt: "Aadhaar back",
+                  },
+                  { label: "Selfie", url: selfieUrl, hasSrc: true, alt: "Selfie" },
+                ].map((doc) => (
+                  <div key={doc.label}>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">{doc.label}</p>
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06] relative group">
+                      {doc.url ? (
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full h-full"
+                          title="Open full size"
+                        >
+                          <img src={doc.url} alt={doc.alt} className="w-full h-full object-contain" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-all text-[11px] font-medium text-white pointer-events-none">
+                            Click to open full size ↗
+                          </div>
+                        </a>
+                      ) : doc.hasSrc ? (
+                        <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Loading...</div>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Not provided</div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Aadhaar Back</p>
-                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
-                    {aadhaarBackUrl ? (
-                      <img src={aadhaarBackUrl} alt="Aadhaar back" className="w-full h-full object-contain" />
-                    ) : selected.aadhaar_back_url ? (
-                      <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Loading...</div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Not provided</div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Selfie</p>
-                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.06]">
-                    {selfieUrl ? (
-                      <img src={selfieUrl} alt="Selfie" className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">Loading...</div>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Actions */}
