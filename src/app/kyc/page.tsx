@@ -18,6 +18,19 @@ interface KYCRequest {
   users: { name: string; username: string; email: string; age: number; profile_pic: string } | null;
 }
 
+/** Format the time between two instants as a short human string, e.g. "2m", "3h", "1d 4h". */
+function formatDelta(start: Date, end: Date): string {
+  const totalMinutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+  if (totalMinutes < 1) return "<1m";
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (hours < 24) return mins ? `${hours}h ${mins}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours ? `${days}d ${remHours}h` : `${days}d`;
+}
+
 export default function KYCPage() {
   const [queue, setQueue] = useState<KYCRequest[]>([]);
   const [history, setHistory] = useState<KYCRequest[]>([]);
@@ -43,7 +56,7 @@ export default function KYCPage() {
         supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "approved"),
         supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "rejected"),
       ]),
-      supabase.from("kyc_verifications").select("*, users!kyc_verifications_user_id_fkey(name, username)").neq("status", "pending").order("created_at", { ascending: false }).limit(20),
+      supabase.from("kyc_verifications").select("*, users!kyc_verifications_user_id_fkey(name, username, profile_pic)").neq("status", "pending").order("reviewed_at", { ascending: false, nullsFirst: false }).limit(20),
     ]);
 
     setQueue(queueRes.data ?? []);
@@ -257,18 +270,55 @@ export default function KYCPage() {
       {/* History */}
       <GlowCard>
         <h3 className="text-sm font-semibold text-gray-300 mb-4">Review History</h3>
-        <div className="space-y-2 max-h-[300px] overflow-y-auto">
-          {history.map((req) => (
-            <div key={req.id} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/[0.02]">
-              <span className={`text-xs px-2 py-0.5 rounded ${req.status === "approved" ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
-                {req.status}
-              </span>
-              <span className="text-sm text-gray-300">{req.users?.name ?? "Unknown"}</span>
-              <span className="text-[10px] text-gray-600 ml-auto">
-                {req.reviewed_at ? new Date(req.reviewed_at).toLocaleDateString("en", { month: "short", day: "numeric" }) : ""}
-              </span>
-            </div>
-          ))}
+        <div className="space-y-2 max-h-[360px] overflow-y-auto">
+          {history.map((req) => {
+            const approved = req.status === "approved";
+            const reviewedAt = req.reviewed_at ? new Date(req.reviewed_at) : null;
+            const submittedAt = new Date(req.created_at);
+            return (
+              <div key={req.id} className="px-3 py-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                <div className="flex items-center gap-3">
+                  {req.users?.profile_pic ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={req.users.profile_pic} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${approved ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                      {req.users?.name?.[0] ?? "?"}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">
+                      {req.users?.name ?? "Unknown"}
+                      {req.users?.username && (
+                        <span className="text-gray-500 font-normal"> · @{req.users.username}</span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {req.reviewed_by ? `Reviewed by ${req.reviewed_by}` : "Reviewed"}
+                      {reviewedAt && (
+                        <> · in {formatDelta(submittedAt, reviewedAt)}</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wider ${approved ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"}`}>
+                      {req.status}
+                    </span>
+                    <span className="text-[10px] text-gray-600">
+                      {reviewedAt
+                        ? reviewedAt.toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                        : "—"}
+                    </span>
+                  </div>
+                </div>
+                {!approved && req.rejection_reason && (
+                  <p className="mt-2 text-[11px] text-red-300/80 pl-11">
+                    Reason: {req.rejection_reason}
+                  </p>
+                )}
+              </div>
+            );
+          })}
           {history.length === 0 && <p className="text-xs text-gray-700 text-center py-4">No reviews yet</p>}
         </div>
       </GlowCard>
