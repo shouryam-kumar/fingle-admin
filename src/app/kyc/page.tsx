@@ -85,22 +85,14 @@ export default function KYCPage() {
     if (!selected) return;
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    await supabase.from("kyc_verifications").update({
-      status: "approved",
-      reviewed_by: user?.email,
-      reviewed_at: new Date().toISOString(),
-    }).eq("id", selected.id);
-
-    // `is_verified` drives the verified badge in the mobile app; `kyc_verified`
-    // is the KYC-specific flag. Keep both in sync on approve so the tick shows up.
-    await supabase.from("users").update({
-      kyc_verified: true,
-      kyc_verified_at: new Date().toISOString(),
-      kyc_method: "manual",
-      is_verified: true,
-    }).eq("id", selected.user_id);
+    // approve_kyc is a SECURITY DEFINER RPC that updates both kyc_verifications
+    // and users in one transaction, bypassing the public.users RLS (which only
+    // allows users to update their own row). Direct UPDATEs from the client
+    // silently failed for the users table.
+    const { error } = await supabase.rpc("approve_kyc", { p_id: selected.id });
+    if (error) {
+      console.error("approve_kyc failed", error);
+    }
 
     setSelected(null);
     setLoading(false);
@@ -111,21 +103,13 @@ export default function KYCPage() {
     if (!selected || !rejectReason.trim()) return;
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-
-    await supabase.from("kyc_verifications").update({
-      status: "rejected",
-      reviewed_by: user?.email,
-      reviewed_at: new Date().toISOString(),
-      rejection_reason: rejectReason.trim(),
-    }).eq("id", selected.id);
-
-    // Defensive: if a previous approval set kyc_verified / is_verified on this
-    // user, drop them now that we're rejecting.
-    await supabase.from("users").update({
-      kyc_verified: false,
-      is_verified: false,
-    }).eq("id", selected.user_id);
+    const { error } = await supabase.rpc("reject_kyc", {
+      p_id: selected.id,
+      p_reason: rejectReason.trim(),
+    });
+    if (error) {
+      console.error("reject_kyc failed", error);
+    }
 
     setSelected(null);
     setRejectReason("");
